@@ -4,11 +4,28 @@ services:
   web:
     container_name: fastapi-crud
     build: ./src
-    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    command: sh -c 'while ! nc -z db 5432; do sleep 1; done; uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000'
     volumes:
       - ./src/:/usr/src/app/
     ports:
       - 8002:8000
     environment:
       - PYTHONPATH=/usr/src/app
- 
+      - DATABASE_URL=postgresql+asyncpg://fastapi_crud:fastapi_crud@db:5432/fastapi_crud_dev
+    depends_on:
+      - db
+
+  db:
+    container_name: postgres-db
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_USER=fastapi_crud
+      - POSTGRES_PASSWORD=fastapi_crud
+      - POSTGRES_DB=fastapi_crud_dev
+
+volumes:
+  postgres_data:
